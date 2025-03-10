@@ -1,0 +1,196 @@
+/* assets/css/style.css */
+
+/* Variables de colores basadas en Litoclean Perú */
+:root {
+    --primary-color: #0d84d3;    /* Verde oscuro */
+    --secondary-color: #ba072c;  /* Verde claro */
+    --accent-color: #FF5722;     /* Naranja */
+    --light-color: #E0F2F1;      /* Verde muy claro */
+    --dark-color: #004D40;       /* Verde muy oscuro */
+    --gray-color: #F5F5F5;       /* Gris claro */
+    --text-dark: #333333;        /* Texto oscuro */
+    --text-light: #FFFFFF;       /* Texto claro */
+}
+
+/* Estilos generales */
+body {
+    font-family: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
+    color: var(--text-dark);
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+/* Personalización de Bootstrap */
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: var(--dark-color) !important;
+    border-color: var(--dark-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.btn-success {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-success:hover, .btn-success:focus, .btn-success:active {
+    background-color: #1285f1 !important;
+    border-color: #093f91 !important;
+}
+
+/* Navbar */
+.navbar-brand img {
+    margin-right: 10px;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+    color: #ffffff;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Tablas */
+.table-hover tbody tr:hover {
+    background-color: var(--light-color);
+}
+
+.table th {
+    background-color: #f2f2f2;
+    border-top: none;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+
+/* Login page */
+.login-logo {
+    max-width: 150px;
+    margin: 0 auto 20px;
+}
+
+/* Notificaciones */
+.notificaciones-dropdown {
+    min-width: 320px;
+    padding: 0;
+}
+
+.notificaciones-dropdown .dropdown-item {
+    white-space: normal;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.6rem;
+    transform: translate(50%, -30%);
+}
+
+/* Formularios */
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(0, 121, 107, 0.25);
+}
+
+/* Footer */
+.footer {
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 0;
+    margin-top: auto;
+}
+
+/* Dashboard */
+.stats-card {
+    border-radius: 10px;
+    transition: transform 0.3s;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Estado de requerimientos */
+.estado-pendiente {
+    color: #ffc107;
+}
+
+.estado-proceso {
+    color: #17a2b8;
+}
+
+.estado-finalizado {
+    color: #28a745;
+}
+
+/* Prioridades */
+.prioridad-baja {
+    border-left: 4px solid #6c757d;
+}
+
+.prioridad-media {
+    border-left: 4px solid #007bff;
+}
+
+.prioridad-alta {
+    border-left: 4px solid #dc3545;
+}
+
+.prioridad-urgente {
+    border-left: 4px solid #343a40;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Notificaciones */
+.notificacion-item {
+    transition: background-color 0.3s;
+}
+
+.notificacion-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Avances */
+.avance-item {
+    border-left: 3px solid var(--primary-color);
+    background-color: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+

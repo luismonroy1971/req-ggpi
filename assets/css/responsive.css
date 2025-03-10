@@ -1,0 +1,80 @@
+/* assets/css/responsive.css */
+
+/* Estilos responsivos */
+@media (max-width: 992px) {
+    .notification-badge {
+        position: static;
+        margin-left: 5px;
+        transform: none;
+    }
+    
+    .navbar-nav .dropdown-menu {
+        position: absolute;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-header {
+        padding: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .notificaciones-dropdown {
+        min-width: 260px;
+    }
+    
+    h1, .h1 {
+        font-size: 1.8rem;
+    }
+    
+    h2, .h2 {
+        font-size: 1.6rem;
+    }
+    
+    h3, .h3 {
+        font-size: 1.4rem;
+    }
+    
+    .btn {
+        padding: 0.375rem 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .notificaciones-dropdown {
+        position: fixed !important;
+        top: 60px !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .card-header .btn {
+        margin-top: 10px;
+    }
+    
+    .table th, .table td {
+        padding: 0.5rem;
+    }
+    
+    .btn-group-sm > .btn, .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
