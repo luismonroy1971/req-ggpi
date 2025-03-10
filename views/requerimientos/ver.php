@@ -300,16 +300,170 @@ include 'views/templates/header.php';
 
             <!-- Sección 7: Anexos -->
             <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-light">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">7. Anexos</h5>
+                    <?php if (isAdmin() || $requerimiento['creado_por'] == $_SESSION['user_id']): ?>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#subirAnexoModal">
+                        <i class="fas fa-upload me-2"></i> Subir Documento
+                    </button>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <div class="mb-4">
-                        <h6 class="font-weight-bold">Documentación adicional:</h6>
-                        <p><?= nl2br($requerimiento['anexos'] ?? 'No se ha adjuntado documentación adicional') ?></p>
+                        <h6 class="font-weight-bold">Descripción de documentación adicional:</h6>
+                        <p><?= nl2br($requerimiento['anexos'] ?? 'No se ha proporcionado descripción de documentación.') ?></p>
+                    </div>
+                    
+                    <h6 class="font-weight-bold mb-3">Documentos adjuntos:</h6>
+                    <?php if (empty($anexos)): ?>
+                        <div class="alert alert-info">
+                            No se han adjuntado documentos a este requerimiento.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Archivo</th>
+                                        <th>Tamaño</th>
+                                        <th>Subido por</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($anexos as $anexo): ?>
+                                        <tr>
+                                            <td><?= $anexo['titulo'] ?></td>
+                                            <td><?= $anexo['nombre_archivo'] ?></td>
+                                            <td><?= formatFileSize($anexo['tamanio_archivo']) ?></td>
+                                            <td><?= $anexo['usuario_nombre'] ?></td>
+                                            <td><?= date('d/m/Y H:i', strtotime($anexo['created_at'])) ?></td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="<?= BASE_URL ?>anexos/descargar/<?= $anexo['id'] ?>" class="btn btn-outline-primary">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                    <?php if (isAdmin() || $requerimiento['creado_por'] == $_SESSION['user_id']): ?>
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editarAnexoModal<?= $anexo['id'] ?>">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#eliminarAnexoModal<?= $anexo['id'] ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Modal para Editar Anexo -->
+                                        <?php if (isAdmin() || $requerimiento['creado_por'] == $_SESSION['user_id']): ?>
+                                        <div class="modal fade" id="editarAnexoModal<?= $anexo['id'] ?>" tabindex="-1" aria-labelledby="editarAnexoModalLabel<?= $anexo['id'] ?>" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-primary text-white">
+                                                        <h5 class="modal-title" id="editarAnexoModalLabel<?= $anexo['id'] ?>">Editar Título del Anexo</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form action="<?= BASE_URL ?>anexos/editar/<?= $anexo['id'] ?>" method="post">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="titulo<?= $anexo['id'] ?>" class="form-label">Título del documento</label>
+                                                                <input type="text" class="form-control" id="titulo<?= $anexo['id'] ?>" name="titulo" value="<?= $anexo['titulo'] ?>" required>
+                                                            </div>
+                                                            <p class="text-muted">Nombre del archivo: <?= $anexo['nombre_archivo'] ?></p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Modal para Eliminar Anexo -->
+                                        <div class="modal fade" id="eliminarAnexoModal<?= $anexo['id'] ?>" tabindex="-1" aria-labelledby="eliminarAnexoModalLabel<?= $anexo['id'] ?>" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title" id="eliminarAnexoModalLabel<?= $anexo['id'] ?>">Eliminar Anexo</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>¿Estás seguro de que deseas eliminar este documento?</p>
+                                                        <p><strong>Título:</strong> <?= $anexo['titulo'] ?></p>
+                                                        <p><strong>Archivo:</strong> <?= $anexo['nombre_archivo'] ?></p>
+                                                        <p class="text-danger"><strong>Esta acción no se puede deshacer.</strong></p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <a href="<?= BASE_URL ?>anexos/eliminar/<?= $anexo['id'] ?>" class="btn btn-danger">Eliminar</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Modal para Subir Anexo -->
+            <?php if (isAdmin() || $requerimiento['creado_por'] == $_SESSION['user_id']): ?>
+            <div class="modal fade" id="subirAnexoModal" tabindex="-1" aria-labelledby="subirAnexoModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="subirAnexoModalLabel">Subir Documento Anexo</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="<?= BASE_URL ?>anexos/subir/<?= $requerimiento['id'] ?>" method="post" enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="titulo" class="form-label">Título del documento <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="titulo" name="titulo" required
+                                        placeholder="Ingrese un título descriptivo para el documento">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="archivo" class="form-label">Seleccionar archivo <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="archivo" name="archivo" required>
+                                    <div class="form-text">
+                                        Formatos permitidos: PDF, Word, Excel, imágenes y texto plano. Tamaño máximo: 10MB.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i> Subir Documento
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
+
+            <?php
+            // Función auxiliar para formatear el tamaño de archivo
+            function formatFileSize($bytes) {
+                if ($bytes >= 1073741824) {
+                    return number_format($bytes / 1073741824, 2) . ' GB';
+                } elseif ($bytes >= 1048576) {
+                    return number_format($bytes / 1048576, 2) . ' MB';
+                } elseif ($bytes >= 1024) {
+                    return number_format($bytes / 1024, 2) . ' KB';
+                } else {
+                    return $bytes . ' bytes';
+                }
+            }
+            ?>
 
             <!-- Sección de Avances -->
             <div class="card mb-4 shadow-sm">

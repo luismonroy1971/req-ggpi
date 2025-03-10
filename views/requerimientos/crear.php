@@ -189,10 +189,21 @@ include 'views/templates/header.php';
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="anexos" class="form-label">Documentación adicional</label>
+                        <label for="anexos" class="form-label">Descripción de documentación adicional</label>
                         <textarea class="form-control" id="anexos" name="anexos" rows="3"
-                            placeholder="Indique si adjuntará diagramas, flujos de trabajo, u otra documentación relevante"><?= $_POST['anexos'] ?? '' ?></textarea>
-                        <div class="form-text">La funcionalidad para subir archivos se implementará próximamente. Por ahora, por favor describa los anexos.</div>
+                            placeholder="Indique brevemente el contenido de los documentos adjuntos"><?= $_POST['anexos'] ?? '' ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="archivos_anexos" class="form-label">Archivos adjuntos</label>
+                        <input type="file" class="form-control" id="archivos_anexos" name="archivos_anexos[]" multiple>
+                        <div class="form-text">
+                            Puedes seleccionar varios archivos. Formatos permitidos: PDF, Word, Excel, imágenes y texto plano. Tamaño máximo: 10MB por archivo.
+                        </div>
+                    </div>
+                    
+                    <div id="lista_archivos" class="mt-3">
+                        <!-- Aquí se mostrarán los archivos seleccionados mediante JavaScript -->
                     </div>
                 </div>
             </div>
@@ -210,3 +221,63 @@ include 'views/templates/header.php';
 </div>
 
 <?php include 'views/templates/footer.php'; ?>
+
+<!-- JavaScript para mostrar la lista de archivos seleccionados -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('archivos_anexos');
+    const lista = document.getElementById('lista_archivos');
+    
+    input.addEventListener('change', function() {
+        lista.innerHTML = '';
+        
+        if (this.files.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'table table-sm table-striped';
+            
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Archivo</th>
+                    <th>Tipo</th>
+                    <th>Tamaño</th>
+                    <th>Título para el documento</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            
+            Array.from(this.files).forEach((file, index) => {
+                const tr = document.createElement('tr');
+                
+                // Formatear tamaño
+                let fileSize;
+                if (file.size > 1024 * 1024) {
+                    fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                } else if (file.size > 1024) {
+                    fileSize = (file.size / 1024).toFixed(2) + ' KB';
+                } else {
+                    fileSize = file.size + ' bytes';
+                }
+                
+                tr.innerHTML = `
+                    <td>${file.name}</td>
+                    <td>${file.type || 'Desconocido'}</td>
+                    <td>${fileSize}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" 
+                               name="anexos_titulos[]" placeholder="Título para ${file.name}" 
+                               value="${file.name.split('.')[0]}" required>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            lista.appendChild(table);
+        }
+    });
+});
+</script>

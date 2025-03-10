@@ -10,12 +10,14 @@ class RequerimientoController {
     private $avanceModel;
     private $notificacionModel;
     private $usuarioModel;
+    private $anexoModel; 
     
     public function __construct() {
         $this->requerimientoModel = new Requerimiento();
         $this->avanceModel = new Avance();
         $this->notificacionModel = new Notificacion();
         $this->usuarioModel = new Usuario();
+        $this->anexoModel = new Anexo();
     }
     
     // Listar requerimientos
@@ -63,7 +65,7 @@ class RequerimientoController {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Procesar el formulario
             
-            // Sanitizar datos
+            // Sanitizar datos básicos
             $titulo = sanitize($_POST['titulo']);
             $descripcion = sanitize($_POST['descripcion']);
             $prioridad = sanitize($_POST['prioridad']);
@@ -133,6 +135,55 @@ class RequerimientoController {
                 $errores[] = 'El impacto esperado es obligatorio';
             }
             
+            // Validar archivos si se han subido
+            $tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'image/jpeg', 'image/png', 'image/gif', 'text/plain'];
+            $tamanoMaximo = 10485760; // 10MB en bytes
+            $archivosValidos = true;
+            $archivosInfo = [];
+            
+            if (isset($_FILES['archivos_anexos']) && !empty($_FILES['archivos_anexos']['name'][0])) {
+                $titulos = $_POST['anexos_titulos'] ?? [];
+                
+                for ($i = 0; $i < count($_FILES['archivos_anexos']['name']); $i++) {
+                    if ($_FILES['archivos_anexos']['error'][$i] === UPLOAD_ERR_OK) {
+                        $tipoArchivo = $_FILES['archivos_anexos']['type'][$i];
+                        $tamanoArchivo = $_FILES['archivos_anexos']['size'][$i];
+                        
+                        if (!in_array($tipoArchivo, $tiposPermitidos)) {
+                            $errores[] = 'El tipo de archivo "' . $_FILES['archivos_anexos']['name'][$i] . '" no está permitido';
+                            $archivosValidos = false;
+                        }
+                        
+                        if ($tamanoArchivo > $tamanoMaximo) {
+                            $errores[] = 'El archivo "' . $_FILES['archivos_anexos']['name'][$i] . '" excede el tamaño máximo permitido';
+                            $archivosValidos = false;
+                        }
+                        
+                        if (empty($titulos[$i])) {
+                            $errores[] = 'Debes proporcionar un título para cada archivo';
+                            $archivosValidos = false;
+                        }
+                        
+                        // Si el archivo es válido, guardar la información para procesarla después
+                        if ($archivosValidos) {
+                            $archivosInfo[] = [
+                                'nombre' => $_FILES['archivos_anexos']['name'][$i],
+                                'tmp_name' => $_FILES['archivos_anexos']['tmp_name'][$i],
+                                'tipo' => $tipoArchivo,
+                                'tamano' => $tamanoArchivo,
+                                'titulo' => $titulos[$i]
+                            ];
+                        }
+                    } else if ($_FILES['archivos_anexos']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                        // Si hay un error en la carga (excepto si no se seleccionó archivo)
+                        $errores[] = 'Error al cargar el archivo "' . $_FILES['archivos_anexos']['name'][$i] . '"';
+                        $archivosValidos = false;
+                    }
+                }
+            }
+            
             // Si no hay errores, guardar requerimiento
             if (empty($errores)) {
                 $data = [
@@ -159,7 +210,39 @@ class RequerimientoController {
                     'anexos' => $anexos
                 ];
                 
-                if ($this->requerimientoModel->crear($data)) {
+                $requerimiento_id = $this->requerimientoModel->crear($data);
+                
+                if ($requerimiento_id) {
+                    // Si hay archivos anexos, procesarlos
+                    if (!empty($archivosInfo)) {
+                        $directorioDestino = 'uploads/anexos/';
+                        
+                        // Crear el directorio si no existe
+                        if (!is_dir($directorioDestino)) {
+                            mkdir($directorioDestino, 0777, true);
+                        }
+                        
+                        foreach ($archivosInfo as $archivo) {
+                            $extension = pathinfo($archivo['nombre'], PATHINFO_EXTENSION);
+                            $nombreArchivo = uniqid() . '_' . time() . '.' . $extension;
+                            $rutaArchivo = $directorioDestino . $nombreArchivo;
+                            
+                            if (move_uploaded_file($archivo['tmp_name'], $rutaArchivo)) {
+                                $dataAnexo = [
+                                    'requerimiento_id' => $requerimiento_id,
+                                    'titulo' => $archivo['titulo'],
+                                    'nombre_archivo' => $archivo['nombre'],
+                                    'ruta_archivo' => $rutaArchivo,
+                                    'tipo_archivo' => $archivo['tipo'],
+                                    'tamanio_archivo' => $archivo['tamano'],
+                                    'usuario_id' => $_SESSION['user_id']
+                                ];
+                                
+                                $this->anexoModel->crear($dataAnexo);
+                            }
+                        }
+                    }
+                    
                     setMessage('success', 'Solicitud de desarrollo digital creada correctamente');
                     redirect('requerimientos');
                 } else {
@@ -174,7 +257,6 @@ class RequerimientoController {
             include 'views/requerimientos/crear.php';
         }
     }
-    
     // Ver detalle de requerimiento
     public function ver($id) {
         // Verificar si el usuario está logueado
@@ -199,6 +281,9 @@ class RequerimientoController {
         
         // Obtener avances del requerimiento
         $avances = $this->avanceModel->listarPorRequerimiento($id);
+
+         // Obtener anexos del requerimiento
+        $anexos = $this->anexoModel->obtenerPorRequerimiento($id);
         
         // Mostrar vista
         include 'views/requerimientos/ver.php';
@@ -265,10 +350,13 @@ class RequerimientoController {
             redirect('requerimientos');
         }
         
+        // Obtener anexos existentes
+        $anexos = $this->anexoModel->obtenerPorRequerimiento($id);
+        
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Procesar formulario
             
-            // Sanitizar datos
+            // Sanitizar datos básicos
             $titulo = sanitize($_POST['titulo']);
             $descripcion = sanitize($_POST['descripcion']);
             $prioridad = sanitize($_POST['prioridad']);
@@ -287,7 +375,7 @@ class RequerimientoController {
             $kpi = sanitize($_POST['kpi']);
             $fecha_inicio = sanitize($_POST['fecha_inicio']);
             $fecha_entrega = sanitize($_POST['fecha_entrega']);
-            $anexos = sanitize($_POST['anexos']);
+            $anexos_desc = sanitize($_POST['anexos']);
             
             // Validar datos
             $errores = [];
@@ -338,6 +426,55 @@ class RequerimientoController {
                 $errores[] = 'El impacto esperado es obligatorio';
             }
             
+            // Validar archivos si se han subido
+            $tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'image/jpeg', 'image/png', 'image/gif', 'text/plain'];
+            $tamanoMaximo = 10485760; // 10MB en bytes
+            $archivosValidos = true;
+            $archivosInfo = [];
+            
+            if (isset($_FILES['archivos_anexos']) && !empty($_FILES['archivos_anexos']['name'][0])) {
+                $titulos = $_POST['anexos_titulos'] ?? [];
+                
+                for ($i = 0; $i < count($_FILES['archivos_anexos']['name']); $i++) {
+                    if ($_FILES['archivos_anexos']['error'][$i] === UPLOAD_ERR_OK) {
+                        $tipoArchivo = $_FILES['archivos_anexos']['type'][$i];
+                        $tamanoArchivo = $_FILES['archivos_anexos']['size'][$i];
+                        
+                        if (!in_array($tipoArchivo, $tiposPermitidos)) {
+                            $errores[] = 'El tipo de archivo "' . $_FILES['archivos_anexos']['name'][$i] . '" no está permitido';
+                            $archivosValidos = false;
+                        }
+                        
+                        if ($tamanoArchivo > $tamanoMaximo) {
+                            $errores[] = 'El archivo "' . $_FILES['archivos_anexos']['name'][$i] . '" excede el tamaño máximo permitido';
+                            $archivosValidos = false;
+                        }
+                        
+                        if (empty($titulos[$i])) {
+                            $errores[] = 'Debes proporcionar un título para cada archivo';
+                            $archivosValidos = false;
+                        }
+                        
+                        // Si el archivo es válido, guardar la información para procesarla después
+                        if ($archivosValidos) {
+                            $archivosInfo[] = [
+                                'nombre' => $_FILES['archivos_anexos']['name'][$i],
+                                'tmp_name' => $_FILES['archivos_anexos']['tmp_name'][$i],
+                                'tipo' => $tipoArchivo,
+                                'tamano' => $tamanoArchivo,
+                                'titulo' => $titulos[$i]
+                            ];
+                        }
+                    } else if ($_FILES['archivos_anexos']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                        // Si hay un error en la carga (excepto si no se seleccionó archivo)
+                        $errores[] = 'Error al cargar el archivo "' . $_FILES['archivos_anexos']['name'][$i] . '"';
+                        $archivosValidos = false;
+                    }
+                }
+            }
+            
             // Si no hay errores, actualizar requerimiento
             if (empty($errores)) {
                 $data = [
@@ -360,10 +497,40 @@ class RequerimientoController {
                     'kpi' => $kpi,
                     'fecha_inicio' => $fecha_inicio,
                     'fecha_entrega' => $fecha_entrega,
-                    'anexos' => $anexos
+                    'anexos' => $anexos_desc
                 ];
                 
                 if ($this->requerimientoModel->actualizar($data)) {
+                    // Si hay archivos anexos nuevos, procesarlos
+                    if (!empty($archivosInfo)) {
+                        $directorioDestino = 'uploads/anexos/';
+                        
+                        // Crear el directorio si no existe
+                        if (!is_dir($directorioDestino)) {
+                            mkdir($directorioDestino, 0777, true);
+                        }
+                        
+                        foreach ($archivosInfo as $archivo) {
+                            $extension = pathinfo($archivo['nombre'], PATHINFO_EXTENSION);
+                            $nombreArchivo = uniqid() . '_' . time() . '.' . $extension;
+                            $rutaArchivo = $directorioDestino . $nombreArchivo;
+                            
+                            if (move_uploaded_file($archivo['tmp_name'], $rutaArchivo)) {
+                                $dataAnexo = [
+                                    'requerimiento_id' => $id,
+                                    'titulo' => $archivo['titulo'],
+                                    'nombre_archivo' => $archivo['nombre'],
+                                    'ruta_archivo' => $rutaArchivo,
+                                    'tipo_archivo' => $archivo['tipo'],
+                                    'tamanio_archivo' => $archivo['tamano'],
+                                    'usuario_id' => $_SESSION['user_id']
+                                ];
+                                
+                                $this->anexoModel->crear($dataAnexo);
+                            }
+                        }
+                    }
+                    
                     setMessage('success', 'Solicitud actualizada correctamente');
                     redirect('requerimientos/ver/' . $id);
                 } else {

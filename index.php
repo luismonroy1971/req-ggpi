@@ -9,6 +9,8 @@ require_once __DIR__ . '/controllers/RequerimientoController.php';
 require_once __DIR__ . '/controllers/AvanceController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/NotificacionController.php';
+require_once __DIR__ . '/controllers/AnexoController.php';
+
 
 // Instanciar controladores
 $authController = new AuthController();
@@ -16,6 +18,7 @@ $requerimientoController = new RequerimientoController();
 $avanceController = new AvanceController();
 $dashboardController = new DashboardController();
 $notificacionController = new NotificacionController();
+$anexoController = new AnexoController();
 
 // Parsear la URL
 $request = trim($_SERVER['REQUEST_URI'], '/');
@@ -155,6 +158,45 @@ switch ($controller) {
                 
             default:
                 redirect('notificaciones');
+                break;
+        }
+        break;
+    case 'anexos':
+        switch ($action) {
+            case 'subir':
+                if ($param) {
+                    $anexoController->subir($param);
+                } else {
+                    redirect('requerimientos');
+                }
+                break;
+                
+            case 'descargar':
+                if ($param) {
+                    $anexoController->descargar($param);
+                } else {
+                    redirect('requerimientos');
+                }
+                break;
+                
+            case 'eliminar':
+                if ($param) {
+                    $anexoController->eliminar($param);
+                } else {
+                    redirect('requerimientos');
+                }
+                break;
+                
+            case 'editar':
+                if ($param) {
+                    $anexoController->editar($param);
+                } else {
+                    redirect('requerimientos');
+                }
+                break;
+                
+            default:
+                redirect('requerimientos');
                 break;
         }
         break;
