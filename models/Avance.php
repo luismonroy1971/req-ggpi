@@ -45,23 +45,49 @@ class Avance {
         }
     }
     
-    // Obtener avance por ID
-    public function obtenerPorId($id) {
-        $sql = "SELECT a.*, u.nombre as usuario_nombre 
-                FROM avances a 
-                JOIN usuarios u ON a.usuario_id = u.id 
-                WHERE a.id = :id";
-        $stmt = $this->db->query($sql);
-        $params = [':id' => $id];
-        return $this->db->single($stmt, $params);
-    }
-    
     // Eliminar avance
     public function eliminar($id) {
-        $sql = "DELETE FROM avances WHERE id = :id";
-        $stmt = $this->db->query($sql);
-        $params = [':id' => $id];
-        return $this->db->execute($stmt, $params);
+        try {
+            $sql = "DELETE FROM avances WHERE id = ?";
+            $stmt = $this->db->query($sql);
+            $stmt->bindValue(1, $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error en eliminar: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Obtener avance por ID
+    public function obtenerPorId($id) {
+        try {
+            $sql = "SELECT a.*, u.nombre as usuario_nombre 
+                    FROM avances a 
+                    JOIN usuarios u ON a.usuario_id = u.id 
+                    WHERE a.id = ?";
+            $stmt = $this->db->query($sql);
+            $stmt->bindValue(1, $id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerPorId: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Actualizar avance
+    public function actualizar($data) {
+        try {
+            $sql = "UPDATE avances SET descripcion = ?, porcentaje = ? WHERE id = ?";
+            $stmt = $this->db->query($sql);
+            $stmt->bindValue(1, $data['descripcion'], PDO::PARAM_STR);
+            $stmt->bindValue(2, $data['porcentaje'], PDO::PARAM_INT);
+            $stmt->bindValue(3, $data['id'], PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error en actualizar: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>

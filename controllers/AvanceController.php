@@ -71,6 +71,72 @@ class AvanceController {
         }
     }
     
+    // Editar avance
+    public function editar($id) {
+        // Verificar si el usuario está logueado y es administrador
+        if (!isLoggedIn() || !isAdmin()) {
+            redirect('login');
+        }
+        
+        // Obtener avance para verificar que existe
+        $avance = $this->avanceModel->obtenerPorId($id);
+        
+        if (!$avance) {
+            setMessage('error', 'El avance no existe');
+            redirect('requerimientos');
+        }
+        
+        $requerimiento_id = $avance['requerimiento_id'];
+        
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Procesar formulario
+            
+            // Sanitizar datos
+            $descripcion = sanitize($_POST['descripcion']);
+            $porcentaje = isset($_POST['porcentaje']) ? (int)sanitize($_POST['porcentaje']) : 0;
+            
+            // Validar datos
+            $errores = [];
+            
+            if (empty($descripcion)) {
+                $errores[] = 'La descripción es obligatoria';
+            }
+            
+            if ($porcentaje < 0 || $porcentaje > 100) {
+                $errores[] = 'El porcentaje debe estar entre 0 y 100';
+            }
+            
+            // Si no hay errores, actualizar avance
+            if (empty($errores)) {
+                $data = [
+                    'id' => $id,
+                    'descripcion' => $descripcion,
+                    'porcentaje' => $porcentaje
+                ];
+                
+                if ($this->avanceModel->actualizar($data)) {
+                    // Si el porcentaje es 100%, sugerir marcar como finalizado
+                    if ($porcentaje == 100) {
+                        setMessage('success', 'Avance actualizado correctamente. El avance indica 100% de completitud. Considere cambiar el estado a "Finalizado".');
+                    } else {
+                        setMessage('success', 'Avance actualizado correctamente');
+                    }
+                } else {
+                    setMessage('error', 'Ocurrió un error al actualizar el avance');
+                }
+            } else {
+                // Si hay errores, mostrar mensaje de error
+                setMessage('error', implode('<br>', $errores));
+            }
+            
+            // IMPORTANTE: Redirigir a la vista del requerimiento, no a la lista
+            redirect('requerimientos/ver/' . $requerimiento_id);
+        } else {
+            // Si no es POST, redirigir al detalle del requerimiento
+            redirect('requerimientos/ver/' . $requerimiento_id);
+        }
+    }
+
     // Eliminar avance
     public function eliminar($id) {
         // Verificar si el usuario está logueado y es administrador

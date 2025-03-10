@@ -85,7 +85,7 @@ switch ($controller) {
                 }
                 break;
                 
-            case 'cambiar-estado':
+            case 'cambiarEstado':
                 if ($param) {
                     $requerimientoController->cambiarEstado($param);
                 } else {
@@ -104,6 +104,14 @@ switch ($controller) {
             case 'crear':
                 if ($param) {
                     $avanceController->crear($param);
+                } else {
+                    redirect('requerimientos');
+                }
+                break;
+                
+            case 'editar':
+                if ($param) {
+                    $avanceController->editar($param);
                 } else {
                     redirect('requerimientos');
                 }
@@ -161,4 +169,3 @@ switch ($controller) {
         break;
 }
 ?>
-

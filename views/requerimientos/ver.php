@@ -335,20 +335,98 @@ include 'views/templates/header.php';
                                             <strong><?= $avance['nombre_usuario'] ?></strong>
                                             <span class="text-muted ms-2"><i class="far fa-clock me-1"></i><?= date('d/m/Y H:i', strtotime($avance['created_at'])) ?></span>
                                         </div>
-                                        <?php if ($avance['porcentaje']): ?>
-                                            <span class="badge bg-info"><?= $avance['porcentaje'] ?>% Completado</span>
-                                        <?php endif; ?>
+                                        <div>
+                                            <?php if ($avance['porcentaje']): ?>
+                                                <span class="badge bg-info me-2"><?= $avance['porcentaje'] ?>% Completado</span>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (isAdmin()): ?>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editarAvanceModal<?= $avance['id'] ?>">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#eliminarAvanceModal<?= $avance['id'] ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <p><?= nl2br($avance['descripcion']) ?></p>
                                     <?php if ($avance['porcentaje']): ?>
                                         <div class="progress mt-2">
-                                            <div class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: <?= $avance['porcentaje'] ?>%;" aria-valuenow="<?= $avance['porcentaje'] ?>" aria-valuemin="0" aria-valuemax="100"><?= $avance['porcentaje'] ?>%</div>
+                                            <div class="progress-bar progress-bar-striped bg-success" role="progressbar" 
+                                                style="width: <?= $avance['porcentaje'] ?>%;" 
+                                                aria-valuenow="<?= $avance['porcentaje'] ?>" aria-valuemin="0" aria-valuemax="100">
+                                                <?= $avance['porcentaje'] ?>%
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
+                            
+                            <!-- Modal para Editar Avance -->
+                            <?php if (isAdmin()): ?>
+                            <div class="modal fade" id="editarAvanceModal<?= $avance['id'] ?>" tabindex="-1" 
+                                aria-labelledby="editarAvanceModalLabel<?= $avance['id'] ?>" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title" id="editarAvanceModalLabel<?= $avance['id'] ?>">Editar Avance</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="<?= BASE_URL ?>avances/editar/<?= $avance['id'] ?>" method="post">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="requerimiento_id" value="<?= $requerimiento['id'] ?>">
+                                                
+                                                <div class="mb-3">
+                                                    <label for="descripcion<?= $avance['id'] ?>" class="form-label">Descripción del avance</label>
+                                                    <textarea class="form-control" id="descripcion<?= $avance['id'] ?>" name="descripcion" rows="5" required><?= $avance['descripcion'] ?></textarea>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="porcentaje<?= $avance['id'] ?>" class="form-label">Porcentaje de avance</label>
+                                                    <input type="range" class="form-range" id="porcentaje<?= $avance['id'] ?>" name="porcentaje" 
+                                                        min="0" max="100" step="5" value="<?= $avance['porcentaje'] ?>" 
+                                                        oninput="porcentajeValueEdit<?= $avance['id'] ?>.value = porcentaje<?= $avance['id'] ?>.value + '%'">
+                                                    <output id="porcentajeValueEdit<?= $avance['id'] ?>"><?= $avance['porcentaje'] ?>%</output>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Modal para Eliminar Avance -->
+                            <div class="modal fade" id="eliminarAvanceModal<?= $avance['id'] ?>" tabindex="-1" 
+                                aria-labelledby="eliminarAvanceModalLabel<?= $avance['id'] ?>" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title" id="eliminarAvanceModalLabel<?= $avance['id'] ?>">Confirmar Eliminación</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>¿Estás seguro de que deseas eliminar este avance? Esta acción no se puede deshacer.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <a href="<?= BASE_URL ?>avances/eliminar/<?= $avance['id'] ?>" class="btn btn-danger">Confirmar Eliminación</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
@@ -385,10 +463,8 @@ include 'views/templates/header.php';
                 <h5 class="modal-title" id="agregarAvanceModalLabel">Agregar Avance</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="<?= BASE_URL ?>avances/crear" method="post">
+            <form action="<?= BASE_URL ?>avances/crear/<?= $requerimiento['id'] ?>" method="post">
                 <div class="modal-body">
-                    <input type="hidden" name="requerimiento_id" value="<?= $requerimiento['id'] ?>">
-                    
                     <div class="mb-3">
                         <label for="descripcion" class="form-label">Descripción del avance</label>
                         <textarea class="form-control" id="descripcion" name="descripcion" rows="5" required></textarea>

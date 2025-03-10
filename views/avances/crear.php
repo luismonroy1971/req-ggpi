@@ -35,6 +35,24 @@ include 'views/templates/header.php';
                 </div>
             </div>
             
+            <div class="mb-4">
+                <label for="porcentaje" class="form-label">Porcentaje de avance</label>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <input type="range" class="form-range" id="porcentaje" name="porcentaje" min="0" max="100" step="5" 
+                               value="<?= $_POST['porcentaje'] ?? '0' ?>" oninput="porcentajeValue.value = porcentaje.value + '%'">
+                    </div>
+                    <div class="col-md-4">
+                        <output id="porcentajeValue" class="form-control text-center">
+                            <?= ($_POST['porcentaje'] ?? '0') ?>%
+                        </output>
+                    </div>
+                </div>
+                <div class="form-text">
+                    Indica el porcentaje estimado de avance del requerimiento completo.
+                </div>
+            </div>
+            
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                 <a href="<?= BASE_URL ?>requerimientos/ver/<?= $requerimiento['id'] ?>" class="btn btn-secondary me-md-2">
                     <i class="fas fa-arrow-left me-2"></i> Volver
@@ -48,4 +66,3 @@ include 'views/templates/header.php';
 </div>
 
 <?php include 'views/templates/footer.php'; ?>
-
