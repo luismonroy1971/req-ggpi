@@ -470,9 +470,9 @@ include 'views/templates/header.php';
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Avances y Comentarios</h5>
                     <?php if (isAdmin()): ?>
-                    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#agregarAvanceModal">
+                    <a href="<?= BASE_URL ?>avances/crear/<?= $requerimiento['id'] ?>" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#agregarAvanceModal">
                         <i class="fas fa-plus-circle me-2"></i> Agregar Avance
-                    </button>
+                    </a>
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
@@ -514,8 +514,8 @@ include 'views/templates/header.php';
                                 <div class="card-body">
                                     <p><?= nl2br($avance['descripcion']) ?></p>
                                     <?php if ($avance['porcentaje']): ?>
-                                        <div class="progress mt-2">
-                                            <div class="progress-bar progress-bar-striped bg-success" role="progressbar" 
+                                        <div class="progress mt-3">
+                                            <div class="progress-bar progress-bar-striped" role="progressbar" 
                                                 style="width: <?= $avance['porcentaje'] ?>%;" 
                                                 aria-valuenow="<?= $avance['porcentaje'] ?>" aria-valuemin="0" aria-valuemax="100">
                                                 <?= $avance['porcentaje'] ?>%

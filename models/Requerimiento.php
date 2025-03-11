@@ -175,41 +175,54 @@ class Requerimiento {
     }
     // Listar requerimientos por área (para usuarios normales)
     public function listarPorArea($area_id, $filtros = []) {
-        $sql = "SELECT r.*, a.nombre as area_nombre, u.nombre as creado_por_nombre 
-                FROM requerimientos r 
-                JOIN areas a ON r.area_id = a.id 
-                JOIN usuarios u ON r.creado_por = u.id 
-                WHERE r.area_id = :area_id";
-        
-        $params = [':area_id' => $area_id];
-        
-        // Aplicar filtros si existen
-        if (!empty($filtros['estado'])) {
-            $sql .= " AND r.estado = :estado";
-            $params[':estado'] = $filtros['estado'];
+        try {
+            $sql = "SELECT r.*, a.nombre as area_nombre, u.nombre as creado_por_nombre 
+                    FROM requerimientos r 
+                    JOIN areas a ON r.area_id = a.id 
+                    JOIN usuarios u ON r.creado_por = u.id 
+                    WHERE r.area_id = ?";
+            
+            $params = [];
+            $params[] = $area_id;
+            
+            // Aplicar filtros si existen
+            if (!empty($filtros['estado'])) {
+                $sql .= " AND r.estado = ?";
+                $params[] = $filtros['estado'];
+            }
+            
+            if (!empty($filtros['prioridad'])) {
+                $sql .= " AND r.prioridad = ?";
+                $params[] = $filtros['prioridad'];
+            }
+            
+            if (!empty($filtros['fecha_desde'])) {
+                $sql .= " AND r.created_at >= ?";
+                $params[] = $filtros['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filtros['fecha_hasta'])) {
+                $sql .= " AND r.created_at <= ?";
+                $params[] = $filtros['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            $sql .= " ORDER BY r.created_at DESC";
+            
+            $stmt = $this->db->query($sql);
+            
+            // Vincular los parámetros
+            for ($i = 0; $i < count($params); $i++) {
+                $stmt->bindValue($i + 1, $params[$i], is_int($params[$i]) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en listarPorArea: " . $e->getMessage());
+            return [];
         }
-        
-        if (!empty($filtros['prioridad'])) {
-            $sql .= " AND r.prioridad = :prioridad";
-            $params[':prioridad'] = $filtros['prioridad'];
-        }
-        
-        if (!empty($filtros['fecha_desde'])) {
-            $sql .= " AND r.created_at >= :fecha_desde";
-            $params[':fecha_desde'] = $filtros['fecha_desde'] . ' 00:00:00';
-        }
-        
-        if (!empty($filtros['fecha_hasta'])) {
-            $sql .= " AND r.created_at <= :fecha_hasta";
-            $params[':fecha_hasta'] = $filtros['fecha_hasta'] . ' 23:59:59';
-        }
-        
-        $sql .= " ORDER BY r.created_at DESC";
-        
-        $stmt = $this->db->query($sql);
-        return $this->db->resultSet($stmt, $params);
     }
-    
+
     // Actualizar estado del requerimiento
     public function actualizarEstado($id, $estado) {
         $sql = "UPDATE requerimientos SET estado = :estado WHERE id = :id";
@@ -231,31 +244,42 @@ class Requerimiento {
     
     // Obtener estadísticas para dashboard
     public function obtenerEstadisticas($area_id = null) {
-        // Si es administrador (area_id = null), ver estadísticas globales
-        if ($area_id === null) {
-            $sql = "SELECT estado, COUNT(*) as total FROM requerimientos GROUP BY estado";
-            $stmt = $this->db->query($sql);
-            $resultado = $this->db->resultSet($stmt);
-        } else {
-            // Para usuarios normales, filtrar por su área
-            $sql = "SELECT estado, COUNT(*) as total FROM requerimientos WHERE area_id = :area_id GROUP BY estado";
-            $stmt = $this->db->query($sql);
-            $params = [':area_id' => $area_id];
-            $resultado = $this->db->resultSet($stmt, $params);
+        try {
+            // Si es administrador (area_id = null), ver estadísticas globales
+            if ($area_id === null) {
+                $sql = "SELECT estado, COUNT(*) as total FROM requerimientos GROUP BY estado";
+                $stmt = $this->db->query($sql);
+                $stmt->execute();
+                $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                // Para usuarios normales, filtrar por su área
+                $sql = "SELECT estado, COUNT(*) as total FROM requerimientos WHERE area_id = ? GROUP BY estado";
+                $stmt = $this->db->query($sql);
+                $stmt->bindValue(1, $area_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // Formatear para uso fácil en gráficos
+            $estadisticas = [
+                'pendiente' => 0,
+                'en proceso' => 0,
+                'finalizado' => 0
+            ];
+            
+            foreach ($resultado as $row) {
+                $estadisticas[$row['estado']] = (int)$row['total'];
+            }
+            
+            return $estadisticas;
+        } catch (Exception $e) {
+            error_log("Error en obtenerEstadisticas: " . $e->getMessage());
+            return [
+                'pendiente' => 0,
+                'en proceso' => 0,
+                'finalizado' => 0
+            ];
         }
-        
-        // Formatear para uso fácil en gráficos
-        $estadisticas = [
-            'pendiente' => 0,
-            'en proceso' => 0,
-            'finalizado' => 0
-        ];
-        
-        foreach ($resultado as $row) {
-            $estadisticas[$row['estado']] = (int)$row['total'];
-        }
-        
-        return $estadisticas;
     }
     
     // Obtener requerimientos recientes

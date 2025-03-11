@@ -99,4 +99,21 @@ class Notificacion {
         $params = [':id' => $id];
         return $this->db->execute($stmt, $params);
     }
+
+    /**
+     * Eliminar todas las notificaciones asociadas a un requerimiento
+     * @param int $requerimiento_id ID del requerimiento
+     * @return bool Resultado de la operación
+     */
+    public function eliminarPorRequerimiento($requerimiento_id) {
+        try {
+            $sql = "DELETE FROM notificaciones WHERE requerimiento_id = ?";
+            $stmt = $this->db->query($sql);
+            $stmt->bindValue(1, $requerimiento_id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error en eliminarPorRequerimiento: " . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -4,6 +4,7 @@ require_once 'models/Requerimiento.php';
 require_once 'models/Avance.php';
 require_once 'models/Notificacion.php';
 require_once 'models/Usuario.php';
+require_once 'models/Anexo.php'; // Añadir esta línea
 
 class RequerimientoController {
     private $requerimientoModel;
@@ -11,8 +12,10 @@ class RequerimientoController {
     private $notificacionModel;
     private $usuarioModel;
     private $anexoModel; 
+    private $db; // Añadir esta propiedad
     
     public function __construct() {
+        $this->db = new Database(); // Inicializar la instancia de Database
         $this->requerimientoModel = new Requerimiento();
         $this->avanceModel = new Avance();
         $this->notificacionModel = new Notificacion();
@@ -553,11 +556,40 @@ class RequerimientoController {
             redirect('login');
         }
         
-        // Intentar eliminar
-        if ($this->requerimientoModel->eliminar($id)) {
-            setMessage('success', 'Solicitud eliminada correctamente');
-        } else {
-            setMessage('error', 'Ocurrió un error al eliminar la solicitud');
+        try {
+            // Iniciar transacción para asegurar integridad
+            $this->db->beginTransaction();
+            
+            // 1. Primero eliminar todos los avances asociados al requerimiento
+            $avances = $this->avanceModel->listarPorRequerimiento($id);
+            foreach ($avances as $avance) {
+                $this->avanceModel->eliminar($avance['id']);
+            }
+            
+            // 2. Eliminar los anexos asociados al requerimiento
+            $anexos = $this->anexoModel->obtenerPorRequerimiento($id);
+            foreach ($anexos as $anexo) {
+                $this->anexoModel->eliminar($anexo['id']);
+            }
+            
+            // 3. Eliminar las notificaciones asociadas al requerimiento
+            $this->notificacionModel->eliminarPorRequerimiento($id);
+            
+            // 4. Finalmente, eliminar el requerimiento
+            if ($this->requerimientoModel->eliminar($id)) {
+                // Confirmar la transacción
+                $this->db->endTransaction();
+                setMessage('success', 'Solicitud eliminada correctamente');
+            } else {
+                // Si falla la eliminación del requerimiento, revertir todo
+                $this->db->cancelTransaction();
+                setMessage('error', 'Ocurrió un error al eliminar la solicitud');
+            }
+        } catch (Exception $e) {
+            // En caso de error, revertir todo
+            $this->db->cancelTransaction();
+            setMessage('error', 'Ocurrió un error al eliminar la solicitud: ' . $e->getMessage());
+            error_log("Error al eliminar requerimiento: " . $e->getMessage());
         }
         
         redirect('requerimientos');
